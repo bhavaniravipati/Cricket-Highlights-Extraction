@@ -6,12 +6,14 @@ from google.cloud import vision
 import base64
 from PIL import Image
 import scoreBoardAnalysis
-class VideoExtractor:
-    def __init__(self):
-        self.ocrClient = vision.ImageAnnotatorClient()
-        self.sBAnalyzer = scoreBoardAnalysis.ScoreBoardAnalysis()
 
-    def analyzeFrame(self,frame, width, height):
+class VideoExtractor:
+    def __init__(self, inputPath):
+        self.ocrClient = vision.ImageAnnotatorClient()
+        self.inputPath = inputPath
+        self.sBAnalyzer = scoreBoardAnalysis.ScoreBoardAnalysis(inputPath)
+
+    def analyzeFrame(self,frame, width, height, frameTime):
         cropped_frame = frame[int(0.87*height):int(0.92*height), int(0.055*width):int(0.45*width)]
         #analyze frame and return a filled scoreboard object
         # cv2.imshow('image',cropped_frame)
@@ -31,12 +33,12 @@ class VideoExtractor:
             # validate text annotations
             # should of of form "{full desc}" "{teamName}" "2-0" "OVERS:" "0.4"
             if(len(texts) >= 5 and self.sBAnalyzer.isTeamAbbreviation(texts[1].description) and (texts[3].description == 'OVERS:')):
-                self.sBAnalyzer.analyzeScoreBoard(texts[2].description,texts[4].description)
+                self.sBAnalyzer.analyzeScoreBoard(texts[2].description,texts[4].description,frameTime)
 
         #score = scoreboard.Scoreboard()
         #return score
-    def extractVideoFrames(self,inputPath):
-        capture = cv2.VideoCapture(inputPath)
+    def extractVideoFrames(self):
+        capture = cv2.VideoCapture(self.inputPath)
         count = 0
         #Get frameRate of the capture
         frameRate = capture.get(5)
@@ -49,7 +51,7 @@ class VideoExtractor:
                 if (currentFrameNo % math.floor(frameRate) == 0) and (currentFrameNo/math.floor(frameRate) > 675):
                     # print("Read frame : %d" % count)
                     # pass the current & prev frame to ocr code
-                    self.analyzeFrame(frame, width, height)
+                    self.analyzeFrame(frame, width, height,currentFrameNo / math.floor(frameRate))
                     count+=1
             else:
                 break
