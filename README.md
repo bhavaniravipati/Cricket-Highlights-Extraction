@@ -1,2 +1,2 @@
-# Cricket-Highlights-compilation
+# Cricket-Highlights-Extraction
 README
